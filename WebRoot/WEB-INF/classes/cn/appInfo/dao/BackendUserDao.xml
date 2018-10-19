@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?> 
+<!DOCTYPE mapper  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.appInfo.dao.BackendUserDao">
+	<select id="login" resultMap="login">
+		SELECT b.*,d.`valueName` as valueName
+		FROM backend_user b,data_dictionary d
+		WHERE b.userCode = #{userCode} AND b.userType = d.`valueId` AND d.`typeCode` = 'USER_TYPE'
+	</select>
+	<resultMap type="BackendUser" id="login">
+		<id property="id" column="id"/>
+		<result property="valueName" column="valueName"/>
+	</resultMap>
+	<select id="selectAppInfoByStatus" resultType="AppInfo">
+		select a.id, a.softwareName,a.APKName,a.supportROM,a.softwareSize,a.devId, (select devName from dev_user where id = a.devId) as devName, a.status, (select valueName from data_dictionary d where a.status=d.valueId AND d.typeCode='APP_STATUS') as statusName, a.flatformId, (select valueName from data_dictionary d where a.flatformId=d.valueId AND d.typeCode='APP_FLATFORM') as flatformName, a.categoryLevel1, (select categoryName from app_category c where c.id=a.categoryLevel1) as categoryLevel1Name, a.categoryLevel2, (select categoryName from app_category c where c.id=a.categoryLevel2) as categoryLevel2Name, a.categoryLevel3, (select categoryName from app_category c where c.id=a.categoryLevel3) as categoryLevel3Name, a.downloads, a.onSaleDate, a.versionId, (select v.versionNo from app_version v where v.id=a.versionId ) as versionNo from app_info a 
+		<trim prefix="where" prefixOverrides="and | or">
+			a.status = 1
+			<if test="softwareName != null and softwareName != ''"> and a.softwareName like CONCAT ('%',#{softwareName},'%') </if>
+			<if test="categoryLevel1 != null"> and a.categoryLevel1 = #{categoryLevel1} </if>
+			<if test="categoryLevel2 != null"> and a.categoryLevel2 = #{categoryLevel2} </if>
+			<if test="categoryLevel3 != null"> and a.categoryLevel3 = #{categoryLevel3} </if>
+			<if test="flatformId != null"> and a.flatformId = #{flatformId} </if>
+			<if test="devId != null"> and a.devId = #{devId} </if>
+		</trim>
+		 order by creationDate DESC limit #{from},#{pageSize} 
+	</select>
+	<select id="totalCount" resultType="int">
+		select count(1) from app_info a
+		<trim prefix="where" prefixOverrides="and | or">
+			a.status = 1
+			<if test="softwareName != null and softwareName != ''"> and a.softwareName like CONCAT ('%',#{softwareName},'%') </if>
+			<if test="flatformId != null"> and a.flatformId = #{flatformId} </if>
+			<if test="categoryLevel1 != null"> and a.categoryLevel1 = #{categoryLevel1} </if>
+			<if test="categoryLevel2 != null"> and a.categoryLevel2 = #{categoryLevel2} </if>
+			<if test="categoryLevel3 != null"> and a.categoryLevel3 = #{categoryLevel3} </if>
+			<if test="devId != null"> and a.devId = #{devId} </if>
+		</trim>
+	</select>
+	<select id="getView" resultMap="getViewInfo">
+		SELECT a.*,d.`valueName` AS dvalueName,
+		(SELECT d.`valueName` FROM app_info a,data_dictionary d WHERE a.`id` = #{appid} AND a.`flatformId` = d.`valueId` AND d.`typeCode` = 'APP_FLATFORM') AS flatformName,
+		(SELECT c.`categoryName` FROM app_info a, app_category c WHERE a.`id` = #{appid} AND a.`categoryLevel1` = c.`id`) AS categoryLevel1Name,
+		(SELECT c.`categoryName` FROM app_info a, app_category c WHERE a.`id` = #{appid} AND a.`categoryLevel2` = c.`id`) AS categoryLevel2Name,
+		(SELECT c.`categoryName` FROM app_info a, app_category c WHERE a.`id` = #{appid} AND a.`categoryLevel3` = c.`id`) AS categoryLevel3Name
+		FROM app_info a,data_dictionary d
+		WHERE a.`id` = #{appid} AND a.`status` = d.`valueId` AND d.`typeCode` = 'APP_STATUS'
+	</select>
+	<resultMap type="AppInfo" id="getViewInfo">
+		<id property="id" column="id"/>
+		<result property="statusName" column="dvalueName"/>
+	</resultMap>
+	<select id="getView2" resultType="App_Version">
+		SELECT v.* 
+		FROM app_info a,app_version v
+		WHERE a.`versionId` = v.`id` AND a.`versionId` = #{versionId}
+	</select>
+	<update id="check">
+		UPDATE app_info SET `status` = #{status} WHERE id = #{id}
+	</update>
+</mapper>
